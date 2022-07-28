@@ -14,7 +14,7 @@ router
   .get('/detail/:id', protect, productController.getRecipeId)
   .get('/userRecipe', protect, productController.getRecipeByUserId)
   // .get('/static/:id', productController.getRecipeId)
-  .post('/', protect,  middUpload, productController.insertRecipe)
+  .post('/add', protect,  middUpload, productController.insertRecipe)
   .put('/:id', protect,  middUpload,  productController.updateRecipe)
   .delete('/:id', protect,  productController.deleteRecipe)
 
