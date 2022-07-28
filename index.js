@@ -9,6 +9,7 @@ const morgan = require('morgan')
 const mainRoute = require('./src/routes')
 const xss = require('xss-clean')
 const path = require('path')
+const cookieParser = require('cookie-parser')
 
 
 const app = express()
@@ -16,12 +17,16 @@ const PORT = process.env.PORT || 5000
 
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
-app.use(cors())
-app.use(helmet({
-  crossOriginResourcePolicy: false,
+app.use(cors({
+  origin: '*',
+  methods: 'GET,POST,PUT,DELETE',
+  preflightContinue: true,
+  optionsSuccessStatus: 200
 }))
+app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }))
 app.use(morgan('dev'))
 app.use(xss())
+app.use(cookieParser())
 
 //
 app.use('/v1', mainRoute)

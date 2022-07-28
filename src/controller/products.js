@@ -2,46 +2,10 @@
 const createError = require('http-errors')
 const productsModel = require('../models/products')
 const commonHelper = require('../helper/common')
+const jwt = require('jsonwebtoken')
 const { v4: uuidv4 } = require('uuid');
+const cloudinary = require('../config/cloudinary')
 const errorServ = new createError.InternalServerError()
-
-// exports.selectRecipeWithCondition = async (req, res, next) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1
-//     let limit = parseInt(req.query.limit) || 4
-//     const offset = (page - 1) * limit
-
-//     const sortBy = req.query.sortby || 'random ()'
-//     const sortOrder = req.query.sortorder || ''
-//     const search = req.query.search || ''
-
-//     const result = await productsModel.selectRecipeWithCondition({ limit, offset, sortBy, sortOrder, search })
-
-//     const { rows: [count] } = await productsModel.countRecipe()
-//     const totalData = search === '' ? parseInt(count.total) : (result.rows).length
-
-//     if (totalData < limit) {
-//       limit = totalData
-//     }
-
-//     if ((result.rows).length === 0) {
-//       notFoundRes(res, 404, 'Data not found')
-//     }
-
-//     const totalPage = Math.ceil(totalData / limit)
-//     const pagination = {
-//       currentPage: page,
-//       dataPerPage: limit,
-//       totalData,
-//       totalPage
-//     }
-
-//     response(res, result.rows, 200, 'Get data success', pagination)
-//   } catch (error) {
-//     console.log(error)
-//     next(errorServ)
-//   }
-// }
 
 exports.selectRecipeWithCondition = async (req, res, next) => {
   try {
@@ -72,36 +36,85 @@ exports.selectRecipeWithCondition = async (req, res, next) => {
   }
 }
 
+exports.getRecipeId = (req, res, next) => {
+  const id = req.params.id
+  console.log('masuk');
+  productsModel
+    .recipebyId(id)
+    .then((result) => {
+      commonHelper.response(res, result.rows, 200, 'get data by id success')
+    })
+    .catch((error) => {
+      console.log(error)
+      next(createError)
+    })
+}
+
+exports.getRecipeByUserId = (req, res, next) => {
+  console.log('tes');
+  let token = req.headers.authorization.split(' ')[1];
+  let decoded = jwt.verify(token, process.env.SECRET_KEY_JWT);
+  console.log(decoded.id, 'masuk pa eko');
+  const id = decoded.id
+  productsModel
+    .recipebyUserId(id)
+    .then((result) => {
+      commonHelper.response(res, result.rows, 200, 'get data by User id success')
+    })
+    .catch((error) => {
+      console.log(error)
+      next(createError)
+    })
+}
+
 exports.insertRecipe = async (req, res, next) => {
   try {
-    console.log(req.files.image[0]);
-    const { id_user, ingredients, title } = req.body
-    // const image = JSON.parse(req.body.image)
-    // const video = JSON.parse(req.body.video)
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = jwt.verify(token, process.env.SECRET_KEY_JWT);
+    // console.log(decoded.id);
+    const id = decoded.id
+
+    const { ingredients, title } = req.body
+    const id_user = id
     let image
     let video
     if (req.files.image) {
-      image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
+      image = req.files.image[0].path
+      // image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
+      const url = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(image, { folder: 'recipe/image' }, function (error, result) {
+          if (result) {
+            resolve(result.url)
+          } else if (error) {
+            reject(error)
+          }
+        })
+      })
+      image = url
     }
     if (req.files.video) {
-      video = `${process.env.HOST_LOCAL_IMAGE}video/${req.files.video[0].filename}` 
+      // video = `${process.env.HOST_LOCAL_IMAGE}video/${req.files.video[0].filename}`
+      video = req.files.video[0].path
+
+      const url = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(video, { folder: 'recipe/video', resource_type: 'video' }, function (error, result) {
+          if (result) {
+            resolve(result.url)
+          } else if (error) {
+            reject(error)
+          }
+        })
+      })
+      video = url
     }
     const data = {
-      id: uuidv4(), 
-      id_user, 
-      ingredients, 
-      title, 
+      id: uuidv4(),
+      id_user,
+      ingredients,
+      title,
       image,
-      // : JSON.stringify(
-      //   image.map((item) => `${process.env.HOST_LOCAL}/upload/image/${item.image}`)
-      // ), 
       video
-      // : JSON.stringify(
-      //   video.map((item) => `${process.env.HOST_LOCAL}/upload/video/${item.video}`)
-      // ), 
-  
     }
-    
     console.log(data);
     await productsModel.insertRecipe(data)
     commonHelper.response(res, data, 201, 'insert data success')
@@ -112,31 +125,64 @@ exports.insertRecipe = async (req, res, next) => {
 }
 
 
-exports.updateRecipe = async(req, res, next) => {
+exports.updateRecipe = async (req, res, next) => {
   try {
+    // console.log(req.files);
     const id = req.params.id
-  const {ingredients, title, image, video, like, create_at } = req.body
-  // const image = JSON.parse(req.body.image)
-  // console.log(image.length);
-  const data = {
-    id,
-    ingredients, 
-    title, 
-    image, 
-    video, 
-    like, 
-    create_at
-    
-    // image: image.length > 0 ? JSON.stringify(image.map((item) => `${process.env.HOST}/image/${item.image}`)) : undefined
-    
-  }
-  await productsModel.updateRecipe(data)
-  commonHelper.response(res, data, 202, 'update data success')
+    const { ingredients, title, like } = req.body
+    let image
+    let video
+    if (req.files.image) {
+      image = req.files.image[0].path
+      // image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
+      const url = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(image, { folder: 'recipe/image' }, function (error, result) {
+          if (result) {
+            resolve(result.url)
+          } else if (error) {
+            reject(error)
+          }
+        })
+      })
+      image = url
+    }
+    if (req.files.video) {
+      // video = `${process.env.HOST_LOCAL_IMAGE}video/${req.files.video[0].filename}`
+      video = req.files.video[0].path
+
+      const url = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(video, { folder: 'recipe/video', resource_type: 'video' }, function (error, result) {
+          if (result) {
+            resolve(result.url)
+          } else if (error) {
+            reject(error)
+          }
+        })
+      })
+      video = url
+    }
+    // if (req.files.image) {
+    //   image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
+    // }
+    // if (req.files.video) {
+    //   video = `${process.env.HOST_LOCAL_IMAGE}video/${req.files.video[0].filename}`
+    // }
+    const data = {
+      id,
+      ingredients,
+      title,
+      image,
+      video,
+      like
+    }
+    console.log(data);
+    await productsModel.updateRecipe(data)
+    commonHelper.response(res, data, 202, 'update data success')
   } catch (error) {
     console.log(error)
-      next(errorServ)
+    next(errorServ)
   }
-  
+
 }
 
 exports.deleteRecipe = (req, res, next) => {

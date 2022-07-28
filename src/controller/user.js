@@ -9,6 +9,7 @@ const userModel = require('../models/user')
 const jwt = require('jsonwebtoken')
 const authHelper = require('../helper/auth')
 const { sendEmail } = require('../helper/mail')
+const cloudinary = require('../config/cloudinary')
 const errorServ = new createError.InternalServerError()
 
 
@@ -53,7 +54,8 @@ exports.login = async (req, res, next) =>{
 
 const payload ={
   email: user.email,
-  // role: user.role
+  id: user.id,
+  role: user.role
 } 
  //generate token
 user.token = authHelper.generateToken(payload)
@@ -68,7 +70,9 @@ user.refreshToken = authHelper.gerateRefreshToken(payload)
 } 
 
 exports.profile = async(req, res, next)=>{
-  const email = req.decoded.email
+  let token = req.headers.authorization.split(' ')[1];
+  let decoded = jwt.verify(token, process.env.SECRET_KEY_JWT);
+  const email = decoded.email
   const {rows: [user]} = await findByEmail(email)
   delete user.password
   response(res, user, 200)
@@ -101,6 +105,50 @@ exports.refreshToken = (req, res, next)=>{
   response(res, result, 200)
 } 
 
+exports.updateUser = async (req, res, next) => {
+  try {
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = jwt.verify(token, process.env.SECRET_KEY_JWT);
+    // console.log(decoded.id);
+    const id = decoded.id
+    const { name, email, phone } = req.body
+    let image 
+    console.log(req.files.image);
+    if (req.files.image) {
+      image = req.files.image[0].path
+      // const [avatarImage] = req.files.avatar
+      const url = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(image, { folder: 'recipe/avatar' }, function (error, result) {
+          if (result) {
+            resolve(result.url)
+          } else if (error) {
+            reject(error)
+          }
+        })
+      })
+      image = url
+    }
+    // if (req.files.image) {
+    //   image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
+    // }
+    const data = {
+      id,
+      name, 
+      email, 
+      phone, 
+      avatar: image
+    }
+    console.log(data);
+    console.log(image);
+    await userModel.updateUser(data)
+    response(res, data, 202, 'update user success')
+  } catch (error) {
+    console.log(error)
+    next(errorServ)
+  }
+
+}
+
 
 exports.selectUser = async (req, res, next) => {
   try {
@@ -127,94 +175,5 @@ exports.selectUser = async (req, res, next) => {
   }
 }
 
-// exports.register = async (req, res, next) =>{
-//   try {
-//     const {idUser, nameStore, descriptionStore, email, password, role, phone, gender, birthday, name, city, image, isActive} = req.body
-//     const {rowCount} = await findByEmail(email)
-//     if (rowCount) {
-//       return next(createError(403, 'user already registered'))
-//     }
-//     const data = {
-//       idUser: uuidv4(idUser), 
-//       nameStore, 
-//       descriptionStore, 
-//       email, 
-//       password: hashPassword(password), 
-//       role, 
-//       phone, 
-//       gender, 
-//       birthday, 
-//       name, 
-//       city, 
-//       image, 
-//       isActive
-//     }
-//     await create(data)
-//     console.log(data);
-//     //sendEmail(email)
-//     commonHelper.response(res, null, 201, 'user successfullyy registered')
-//   } catch (error) {
-//     console.log(error)
-//     next(new createError.InternalServerError())
-//   }
-// }
 
-// // const register = (req, res, next) =>{
-// //   res.send('ini register')
-
-// // }
-
-// exports.insertUser = async(req, res, next) => {
-//   const { nameStore, descriptionStore, email, password, role, phone, gender, birthday, name } = req.body
-
-//   const data = {
-//     idUser: uuidv4(), 
-//     nameStore, 
-//     descriptionStore, 
-//     email, 
-//     password: await commonHelper.hashPassword(password), 
-//     role, 
-//     phone, 
-//     gender, 
-//     birthday,
-//     name
-//   }
-//   userModel.insertUser(data)
-//     .then(() => {
-//       commonHelper.response(res, data, 201, 'insert data success')
-//     })
-//     .catch((error) => {
-//       console.log(error)
-//       next(errorServ)
-//     })
-// }
-
-// exports.updateUser = (req, res, next) => {
-//   const id = req.params.id
-//   const { idUser, nameStore, descriptionStore, email, password, role, phone, gender, birthday, name } = req.body
-//   userModel.updateUser({ id, idUser, nameStore, descriptionStore, email, password, role, phone, gender, birthday, name })
-//     .then(() => {
-//       res.json({
-//         message: 'update data success'
-//       })
-//     })
-//     .catch((error) => {
-//       console.log(error)
-//       next(errorServ)
-//     })
-// }
-
-// exports.deleteUser = (req, res, next) => {
-//   const id = req.params.id
-//   userModel.deleteUser(id)
-//     .then(() => {
-//       res.json({
-//         message: 'delete data success'
-//       })
-//     })
-//     .catch((error) => {
-//       console.log(error)
-//       next(new createError.InternalServerError())
-//     })
-// }
 
