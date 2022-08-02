@@ -99,9 +99,9 @@ Contributions are what make the open source community such an amazing place to b
 
 <!-- RELATED PROJECT -->
 ## Related Project
-* [`Mama Recipe Demo`](https://fe-food-recepies.vercel.app)
-* [`Mama Recipe Rest API`](https://food-recipes98.herokuapp.com/)
-* [`Mama Recipe Frontend Repository`](https://github.com/NisrinaNataraharja/FE-Food-Recipes)
+* [`Food Recipes Demo`](https://fe-food-recepies.vercel.app)
+* [`Food Recipes Rest API`](https://food-recipes98.herokuapp.com/)
+* [`Food Recipes Frontend Repository`](https://github.com/NisrinaNataraharja/FE-Food-Recipes)
 
 
 <!-- CONTACT -->
