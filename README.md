@@ -23,7 +23,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Food Recipes Rest API is server api that used in [`Food Recipes aplication`](https://fe-food-recepies.vercel.app) . This server manage all function and endpoint in Food recipes app such as create, add , update and delete recipe. Authentication about login, register and getting profile info.
+Food Recipes Rest API is server api that used in [`Food Recipes application`](https://fe-food-recepies.vercel.app) . This server manage all function and endpoint in Food recipes app such as create, add , update and delete recipe. Authentication about login, register and getting profile info.
 
 
 ### Built With
