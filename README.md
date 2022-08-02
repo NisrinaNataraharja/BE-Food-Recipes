@@ -3,7 +3,7 @@
 
   <h3 align="center">Food Recipes Rest API</h3>
   <p align="center">
-    <image align="center" width="200" src='[./images/mamareciperest.jpg](https://github.com/NisrinaNataraharja/FE-Food-Recipes/blob/main/public/images/screenshoot/logo.png)' />
+    <image align="center" width="200" src='https://github.com/NisrinaNataraharja/FE-Food-Recipes/blob/main/public/images/screenshoot/logo.png' />
   </p>
 
 
